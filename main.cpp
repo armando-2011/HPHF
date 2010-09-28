@@ -1,10 +1,30 @@
-//High Performance Hartree Fock
-//Based on / inspired by:
-//Szabo and Ostlund, "Modern Quantum Chemistry"
+// High Performance Hartree Fock
+// Based on / inspired by:
+// Szabo and Ostlund, "Modern Quantum Chemistry"
 
-#include <stdio.h>
-#include<math.h>
+// STATUS : Hardcoded for H2
 
+// C includes
+#include <cstdio>
+#include <cmath>
+// C++ includes
+#include <iostream>
+#include <string>
+#include <vector>
+//#include <Eigen/Eigen>
+
+using namespace std;
+//using namespace Eigen;
+
+struct atom
+{
+	string element;
+	double charge;
+	double position[3];
+	double Nelec;
+	vector<double> coeff;
+	vector<double> exponent;
+};
 
 int main() {
 	
@@ -13,6 +33,46 @@ int main() {
 	// 1:
 	// Specify a set of nuclear coordinates (R_A), atomic numbers
 	// (Z_A), number of electrons (N), and a basis set (phi_m)
+	
+	// I will hardcode in H2 to start, 
+	int NAtoms;
+	NAtoms = 2;
+	double charge;
+	charge = 0;
+
+	atom atoms[NAtoms];
+
+	atoms[0].element = "Hydrogen";
+	atoms[0].charge = 1;
+	atoms[0].Nelec = 1;
+	atoms[0].position[0] = 0;
+	atoms[0].position[1] = 0;
+	atoms[0].position[2] = 0;
+
+	atoms[1].element = "Hydrogen";
+	atoms[1].charge = 1;
+	atoms[1].Nelec = 1;
+	atoms[1].position[0] = 0.75;
+	atoms[1].position[1] = 0;
+	atoms[1].position[2] = 0;
+
+	// Robot Roll-Call
+	for (int i = 0; i < NAtoms; i++) {
+		cout << "Atom " <<  i+1 << ":\n"
+		     << "Name: " <<  atoms[i].element << "\n"	
+		     << "Charge: " << atoms[i].charge << "\n"
+		     << "Position: " << atoms[i].position[0] << " " 
+		     << atoms[i].position[1] << " " << atoms[i].position[2]
+		     << "\n   ---   \n"
+		     ;
+	}
+	
+	double N_total;
+	N_total = 0;
+	for (int i = 0; i < NAtoms; i++){
+		N_total = N_total + atoms[i].Nelec;
+	}
+	N_total = N_total + charge;
 	//
 	// 2:
 	// Calculate the required molecular integrals: S_mn, Hcore_mn, and (mn|ls)
