@@ -1,0 +1,2 @@
+HPHF will be a scalable Hartree-Fock program (OpenMPI and OpenMP) written
+in C++.
