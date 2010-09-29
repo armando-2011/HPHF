@@ -11,28 +11,34 @@
 #include <iostream>
 #include <string>
 #include <vector>
-//#include <Eigen/Eigen>
+#include <Eigen/Eigen>
 
 using namespace std;
-//using namespace Eigen;
+using namespace Eigen;
+
+const double pi = 3.1415926535898;
+
 
 struct atom
 {
 	string element;
 	double charge;
-	double position[3];
-	double Nelec;
-	vector<double> coeff;
-	vector<double> exponent;
+	VectorXd position;
+	int Nelec;
+	VectorXd coeff;    
+	VectorXd exponent;
 };
 
 int main() {
 	
 	// The SCF procedure is a 12 step process, because anything less is for alcoholics.
-	//
+	
+	
 	// 1:
-	// Specify a set of nuclear coordinates (R_A), atomic numbers
-	// (Z_A), number of electrons (N), and a basis set (phi_m)
+	// Specify a set of nuclear coordinates (R_A), 
+	// atomic numbers (Z_A),
+	// number of electrons (N), 
+	// and a basis set (phi_m)
 	
 	// I will hardcode in H2 to start, 
 	int NAtoms;
@@ -45,34 +51,67 @@ int main() {
 	atoms[0].element = "Hydrogen";
 	atoms[0].charge = 1;
 	atoms[0].Nelec = 1;
-	atoms[0].position[0] = 0;
-	atoms[0].position[1] = 0;
-	atoms[0].position[2] = 0;
+	atoms[0].position = VectorXd::Zero(3);
+	atoms[0].position << 0, 0, 0;
 
 	atoms[1].element = "Hydrogen";
 	atoms[1].charge = 1;
 	atoms[1].Nelec = 1;
-	atoms[1].position[0] = 0.75;
-	atoms[1].position[1] = 0;
-	atoms[1].position[2] = 0;
+	atoms[1].position = VectorXd::Zero(3);
+	atoms[1].position << 0.75, 0, 0;
 
 	// Robot Roll-Call
 	for (int i = 0; i < NAtoms; i++) {
 		cout << "Atom " <<  i+1 << ":\n"
 		     << "Name: " <<  atoms[i].element << "\n"	
 		     << "Charge: " << atoms[i].charge << "\n"
-		     << "Position: " << atoms[i].position[0] << " " 
-		     << atoms[i].position[1] << " " << atoms[i].position[2]
+		     << "Position: " << atoms[i].position.transpose() // << " " 
+		     //<< atoms[i].position[1] << " " << atoms[i].position[2]
 		     << "\n   ---   \n"
 		     ;
 	}
-	
-	double N_total;
+
+	// Get the total number of electrons	
+	int N_total;
 	N_total = 0;
 	for (int i = 0; i < NAtoms; i++){
 		N_total = N_total + atoms[i].Nelec;
 	}
 	N_total = N_total + charge;
+
+	// We are working with CLOSED SHELL HF at the moment
+	if ( N_total % 2 != 0){
+		cout << "You do not have an even number of electrons. \nAborting";
+			return(1);
+	}
+	// Tell the user something
+	cout << "The Number of electrons is " << N_total << "\n";
+
+
+	// Lets Hard-Code in the STO-6G basis set for Hydrogen.
+	// Taken from https://bse.pnl.gov/bse/portal
+	for (int i = 0; i < NAtoms; i++){
+		atoms[i].exponent = VectorXd::Zero(6);
+		atoms[i].coeff = VectorXd::Zero(6);
+		atoms[i].exponent << 35.52322122, 6.513143725, 1.822142904, 0.625955266, 0.243076747, 0.100112428;
+		atoms[i].coeff << 0.00916359628, 0.04936149294, 0.16853830490, 0.37056279970, 0.41649152980, 0.13033408410;
+	}
+	
+	// The STO basis sets from the EMSL have had their exponents scaled, but not their coefficients.
+	// This has been hard-coded for 6 (j loop). Will need to be changed later.
+	for (int i = 0; i < NAtoms; i++) {
+		for (int j = 0; j < 6; j++){
+			atoms[i].coeff[j] = atoms[i].coeff[j] * 
+				pow((2 * atoms[i].exponent[j] / pi), 0.75);
+		}
+	}
+
+	// Spit something out
+	cout << "Coefficients:\n" << atoms[0].coeff.transpose() << "\n";
+	cout << "Exponents:\n" << atoms[0].exponent.transpose() << "\n";
+
+	// I think we're done here. On to step 2.
+
 	//
 	// 2:
 	// Calculate the required molecular integrals: S_mn, Hcore_mn, and (mn|ls)
