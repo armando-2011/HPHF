@@ -9,6 +9,7 @@
 #include <cmath>
 // C++ includes
 #include <iostream>
+#include <iomanip>
 #include <string>
 #include <vector>
 #include <Eigen/Eigen>
@@ -29,7 +30,12 @@ struct atom
 	VectorXd exponent;
 };
 
+// Include our functions
+#include "functions.h"
+
 int main() {
+	bool printinfo;
+	printinfo = false;
 	
 	// The SCF procedure is a 12 step process, because anything less is for alcoholics.
 	
@@ -61,6 +67,7 @@ int main() {
 	atoms[1].position << 0.75, 0, 0;
 
 	// Robot Roll-Call
+	if (printinfo){
 	for (int i = 0; i < NAtoms; i++) {
 		cout << "Atom " <<  i+1 << ":\n"
 		     << "Name: " <<  atoms[i].element << "\n"	
@@ -69,6 +76,7 @@ int main() {
 		     //<< atoms[i].position[1] << " " << atoms[i].position[2]
 		     << "\n   ---   \n"
 		     ;
+	}
 	}
 
 	// Get the total number of electrons	
@@ -85,8 +93,9 @@ int main() {
 			return(1);
 	}
 	// Tell the user something
+	if (printinfo){
 	cout << "The Number of electrons is " << N_total << "\n";
-
+	}
 
 	// Lets Hard-Code in the STO-6G basis set for Hydrogen.
 	// Taken from https://bse.pnl.gov/bse/portal
@@ -107,14 +116,54 @@ int main() {
 	}
 
 	// Spit something out
+	if (printinfo){
 	cout << "Coefficients:\n" << atoms[0].coeff.transpose() << "\n";
 	cout << "Exponents:\n" << atoms[0].exponent.transpose() << "\n";
+	}
+	if (printinfo){
+		cout.precision(10);
+		//I need to coeff. to higher precison for comparison
+		for (int i=0; i<6; i++){
+			cout << atoms[0].coeff[i] << endl;
+		}
+	}
 
-	// I think we're done here. On to step 2.
 
 	//
 	// 2:
 	// Calculate the required molecular integrals: S_mn, Hcore_mn, and (mn|ls)
+	
+	// The STO-6G basis set is a linear combination of 6 Gaussians,
+	// but technically it is only one basis function. Therefore our
+	// system here will have 2 total basis functions (i.e. a 2x2)
+	int NBasis (2);
+
+
+	// Set up our overlap Matrix
+	MatrixXd S(NBasis,NBasis);
+
+	for (int i = 0; i < NBasis; i++){
+		for (int j = 0; j < NBasis; j++){
+			S(i,j) = overlap(atoms[i].coeff, atoms[i].exponent, 
+					 atoms[j].coeff, atoms[j].exponent, 
+					 atoms[i].position[0], atoms[j].position[0] );
+		}
+	}
+
+	// Use SVD do diagonalize S
+	bool solved;
+	VectorXd b(NBasis);
+	VectorXd x(NBasis);
+	solved =  S.svd().solve(b, &x); // Test to make sure it is solvable
+	if (! solved){
+		cout << "Cannot diagonalize overlap matrix!!!";
+		return(0);
+	}
+	SVD<MatrixXd> lala(S);
+	lala.solve(b, &x);
+	cout << lala.matrixU() << endl;
+	cout << lala.matrixV() << endl;
+	cout << lala.matrixV()*S*lala.matrixV() << endl;
 	//
 	// 3:
 	// Diagonalize the overlap matrix S, and obtain a transforamtion matrix X using either
